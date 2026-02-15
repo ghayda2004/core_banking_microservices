@@ -1,0 +1,10 @@
+{
+  "recommendations": [
+    "Angular.ng-template",
+    "ms-vscode.vscode-typescript-next",
+    "esbenp.prettier-vscode",
+    "bradlc.vscode-tailwindcss",
+    "johnsoncodehk.volar",
+    "ms-playwright.test-for-vscode"
+  ]
+}
