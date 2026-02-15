@@ -1,0 +1,183 @@
+version: '3.8'
+
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:7.0
+    container_name: core-banking-mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_DATABASE=core_banking
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - banking-network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Auth Service
+  auth-service:
+    build:
+      context: ./backend/services/auth
+      dockerfile: Dockerfile
+    container_name: auth-service
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - MONGODB_URI=mongodb://mongodb:27017/core_banking_auth
+      - JWT_SECRET=core-banking-secret-key-change-in-production
+      - NODE_ENV=production
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - banking-network
+    restart: unless-stopped
+
+  # Accounts Service
+  accounts-service:
+    build:
+      context: ./backend/services/accounts
+      dockerfile: Dockerfile
+    container_name: accounts-service
+    ports:
+      - "3002:3002"
+    environment:
+      - PORT=3002
+      - MONGODB_URI=mongodb://mongodb:27017/core_banking_accounts
+      - AUTH_SERVICE_URL=http://auth-service:3001
+      - NODE_ENV=production
+    depends_on:
+      - mongodb
+      - auth-service
+    networks:
+      - banking-network
+    restart: unless-stopped
+
+  # Transactions Service
+  transactions-service:
+    build:
+      context: ./backend/services/transactions
+      dockerfile: Dockerfile
+    container_name: transactions-service
+    ports:
+      - "3003:3003"
+    environment:
+      - PORT=3003
+      - MONGODB_URI=mongodb://mongodb:27017/core_banking_transactions
+      - AUTH_SERVICE_URL=http://auth-service:3001
+      - ACCOUNTS_SERVICE_URL=http://accounts-service:3002
+      - NOTIFICATIONS_SERVICE_URL=http://notifications-service:3006
+      - NODE_ENV=production
+    depends_on:
+      - mongodb
+      - auth-service
+      - accounts-service
+    networks:
+      - banking-network
+    restart: unless-stopped
+
+  # Clients Service
+  clients-service:
+    build:
+      context: ./backend/services/clients
+      dockerfile: Dockerfile
+    container_name: clients-service
+    ports:
+      - "3004:3004"
+    environment:
+      - PORT=3004
+      - MONGODB_URI=mongodb://mongodb:27017/core_banking_clients
+      - AUTH_SERVICE_URL=http://auth-service:3001
+      - NODE_ENV=production
+    depends_on:
+      - mongodb
+      - auth-service
+    networks:
+      - banking-network
+    restart: unless-stopped
+
+  # Admin Service
+  admin-service:
+    build:
+      context: ./backend/services/admin
+      dockerfile: Dockerfile
+    container_name: admin-service
+    ports:
+      - "3005:3005"
+    environment:
+      - PORT=3005
+      - AUTH_SERVICE_URL=http://auth-service:3001
+      - ACCOUNTS_SERVICE_URL=http://accounts-service:3002
+      - TRANSACTIONS_SERVICE_URL=http://transactions-service:3003
+      - CLIENTS_SERVICE_URL=http://clients-service:3004
+      - NODE_ENV=production
+    depends_on:
+      - auth-service
+      - accounts-service
+      - transactions-service
+      - clients-service
+    networks:
+      - banking-network
+    restart: unless-stopped
+
+  # Notifications Service
+  notifications-service:
+    build:
+      context: ./backend/services/notifications
+      dockerfile: Dockerfile
+    container_name: notifications-service
+    ports:
+      - "3006:3006"
+    environment:
+      - PORT=3006
+      - MONGODB_URI=mongodb://mongodb:27017/core_banking_notifications
+      - AUTH_SERVICE_URL=http://auth-service:3001
+      - NODE_ENV=production
+    depends_on:
+      - mongodb
+      - auth-service
+    networks:
+      - banking-network
+    restart: unless-stopped
+
+  # API Gateway
+  api-gateway:
+    build:
+      context: ./backend/services/api-gateway
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - AUTH_SERVICE_URL=http://auth-service:3001
+      - ACCOUNTS_SERVICE_URL=http://accounts-service:3002
+      - TRANSACTIONS_SERVICE_URL=http://transactions-service:3003
+      - CLIENTS_SERVICE_URL=http://clients-service:3004
+      - ADMIN_SERVICE_URL=http://admin-service:3005
+      - NOTIFICATIONS_SERVICE_URL=http://notifications-service:3006
+      - NODE_ENV=production
+    depends_on:
+      - auth-service
+      - accounts-service
+      - transactions-service
+      - clients-service
+      - admin-service
+      - notifications-service
+    networks:
+      - banking-network
+    restart: unless-stopped
+
+networks:
+  banking-network:
+    driver: bridge
+
+volumes:
+  mongodb_data:
+    driver: local
