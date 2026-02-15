@@ -50,9 +50,9 @@ export class DatabaseManager {
    * Create database schema
    */
   private async createSchema(): Promise<void> {
-    const schema = `
-      -- Countries Table
-      CREATE TABLE IF NOT EXISTS countries (
+    const statements = [
+      // Countries Table
+      `CREATE TABLE IF NOT EXISTS countries (
         id TEXT PRIMARY KEY,
         code TEXT UNIQUE NOT NULL,
         name TEXT NOT NULL,
@@ -60,13 +60,12 @@ export class DatabaseManager {
         is_active INTEGER DEFAULT 1,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP,
         updated_at TEXT DEFAULT CURRENT_TIMESTAMP
-      );
+      )`,
+      `CREATE INDEX IF NOT EXISTS idx_countries_code ON countries(code)`,
+      `CREATE INDEX IF NOT EXISTS idx_countries_active ON countries(is_active)`,
 
-      CREATE INDEX IF NOT EXISTS idx_countries_code ON countries(code);
-      CREATE INDEX IF NOT EXISTS idx_countries_active ON countries(is_active);
-
-      -- Regions Table
-      CREATE TABLE IF NOT EXISTS regions (
+      // Regions Table
+      `CREATE TABLE IF NOT EXISTS regions (
         id TEXT PRIMARY KEY,
         country_id TEXT NOT NULL,
         code TEXT UNIQUE NOT NULL,
@@ -75,14 +74,13 @@ export class DatabaseManager {
         created_at TEXT DEFAULT CURRENT_TIMESTAMP,
         updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (country_id) REFERENCES countries(id)
-      );
+      )`,
+      `CREATE INDEX IF NOT EXISTS idx_regions_country ON regions(country_id)`,
+      `CREATE INDEX IF NOT EXISTS idx_regions_code ON regions(code)`,
+      `CREATE INDEX IF NOT EXISTS idx_regions_active ON regions(is_active)`,
 
-      CREATE INDEX IF NOT EXISTS idx_regions_country ON regions(country_id);
-      CREATE INDEX IF NOT EXISTS idx_regions_code ON regions(code);
-      CREATE INDEX IF NOT EXISTS idx_regions_active ON regions(is_active);
-
-      -- Branches Table
-      CREATE TABLE IF NOT EXISTS branches (
+      // Branches Table
+      `CREATE TABLE IF NOT EXISTS branches (
         id TEXT PRIMARY KEY,
         region_id TEXT NOT NULL,
         code TEXT UNIQUE NOT NULL,
@@ -98,15 +96,14 @@ export class DatabaseManager {
         created_at TEXT DEFAULT CURRENT_TIMESTAMP,
         updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (region_id) REFERENCES regions(id)
-      );
+      )`,
+      `CREATE INDEX IF NOT EXISTS idx_branches_region ON branches(region_id)`,
+      `CREATE INDEX IF NOT EXISTS idx_branches_code ON branches(code)`,
+      `CREATE INDEX IF NOT EXISTS idx_branches_type ON branches(branch_type)`,
+      `CREATE INDEX IF NOT EXISTS idx_branches_active ON branches(is_active)`,
 
-      CREATE INDEX IF NOT EXISTS idx_branches_region ON branches(region_id);
-      CREATE INDEX IF NOT EXISTS idx_branches_code ON branches(code);
-      CREATE INDEX IF NOT EXISTS idx_branches_type ON branches(branch_type);
-      CREATE INDEX IF NOT EXISTS idx_branches_active ON branches(is_active);
-
-      -- Roles Table
-      CREATE TABLE IF NOT EXISTS roles (
+      // Roles Table
+      `CREATE TABLE IF NOT EXISTS roles (
         id TEXT PRIMARY KEY,
         code TEXT UNIQUE NOT NULL,
         name TEXT NOT NULL,
@@ -115,13 +112,12 @@ export class DatabaseManager {
         is_system_role INTEGER DEFAULT 0,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP,
         updated_at TEXT DEFAULT CURRENT_TIMESTAMP
-      );
+      )`,
+      `CREATE INDEX IF NOT EXISTS idx_roles_code ON roles(code)`,
+      `CREATE INDEX IF NOT EXISTS idx_roles_level ON roles(level)`,
 
-      CREATE INDEX IF NOT EXISTS idx_roles_code ON roles(code);
-      CREATE INDEX IF NOT EXISTS idx_roles_level ON roles(level);
-
-      -- Permissions Table
-      CREATE TABLE IF NOT EXISTS permissions (
+      // Permissions Table
+      `CREATE TABLE IF NOT EXISTS permissions (
         id TEXT PRIMARY KEY,
         role_id TEXT NOT NULL,
         resource TEXT NOT NULL,
@@ -129,13 +125,12 @@ export class DatabaseManager {
         scope TEXT NOT NULL,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE
-      );
+      )`,
+      `CREATE INDEX IF NOT EXISTS idx_permissions_role ON permissions(role_id)`,
+      `CREATE INDEX IF NOT EXISTS idx_permissions_resource ON permissions(resource)`,
 
-      CREATE INDEX IF NOT EXISTS idx_permissions_role ON permissions(role_id);
-      CREATE INDEX IF NOT EXISTS idx_permissions_resource ON permissions(resource);
-
-      -- Employees Table
-      CREATE TABLE IF NOT EXISTS employees (
+      // Employees Table
+      `CREATE TABLE IF NOT EXISTS employees (
         id TEXT PRIMARY KEY,
         employee_code TEXT UNIQUE NOT NULL,
         first_name TEXT NOT NULL,
@@ -156,18 +151,17 @@ export class DatabaseManager {
         FOREIGN KEY (branch_id) REFERENCES branches(id),
         FOREIGN KEY (role_id) REFERENCES roles(id),
         FOREIGN KEY (manager_id) REFERENCES employees(id)
-      );
+      )`,
+      `CREATE INDEX IF NOT EXISTS idx_employees_code ON employees(employee_code)`,
+      `CREATE INDEX IF NOT EXISTS idx_employees_email ON employees(email)`,
+      `CREATE INDEX IF NOT EXISTS idx_employees_branch ON employees(branch_id)`,
+      `CREATE INDEX IF NOT EXISTS idx_employees_role ON employees(role_id)`,
+      `CREATE INDEX IF NOT EXISTS idx_employees_manager ON employees(manager_id)`,
+      `CREATE INDEX IF NOT EXISTS idx_employees_status ON employees(employment_status)`,
+      `CREATE INDEX IF NOT EXISTS idx_employees_department ON employees(department)`,
 
-      CREATE INDEX IF NOT EXISTS idx_employees_code ON employees(employee_code);
-      CREATE INDEX IF NOT EXISTS idx_employees_email ON employees(email);
-      CREATE INDEX IF NOT EXISTS idx_employees_branch ON employees(branch_id);
-      CREATE INDEX IF NOT EXISTS idx_employees_role ON employees(role_id);
-      CREATE INDEX IF NOT EXISTS idx_employees_manager ON employees(manager_id);
-      CREATE INDEX IF NOT EXISTS idx_employees_status ON employees(employment_status);
-      CREATE INDEX IF NOT EXISTS idx_employees_department ON employees(department);
-
-      -- Client Users Table
-      CREATE TABLE IF NOT EXISTS client_users (
+      // Client Users Table
+      `CREATE TABLE IF NOT EXISTS client_users (
         id TEXT PRIMARY KEY,
         user_code TEXT UNIQUE NOT NULL,
         first_name TEXT NOT NULL,
@@ -190,17 +184,16 @@ export class DatabaseManager {
         updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (branch_id) REFERENCES branches(id),
         FOREIGN KEY (country_id) REFERENCES countries(id)
-      );
+      )`,
+      `CREATE INDEX IF NOT EXISTS idx_client_users_code ON client_users(user_code)`,
+      `CREATE INDEX IF NOT EXISTS idx_client_users_email ON client_users(email)`,
+      `CREATE INDEX IF NOT EXISTS idx_client_users_branch ON client_users(branch_id)`,
+      `CREATE INDEX IF NOT EXISTS idx_client_users_status ON client_users(status)`,
+      `CREATE INDEX IF NOT EXISTS idx_client_users_kyc ON client_users(kyc_status)`,
+      `CREATE INDEX IF NOT EXISTS idx_client_users_country ON client_users(country_id)`,
 
-      CREATE INDEX IF NOT EXISTS idx_client_users_code ON client_users(user_code);
-      CREATE INDEX IF NOT EXISTS idx_client_users_email ON client_users(email);
-      CREATE INDEX IF NOT EXISTS idx_client_users_branch ON client_users(branch_id);
-      CREATE INDEX IF NOT EXISTS idx_client_users_status ON client_users(status);
-      CREATE INDEX IF NOT EXISTS idx_client_users_kyc ON client_users(kyc_status);
-      CREATE INDEX IF NOT EXISTS idx_client_users_country ON client_users(country_id);
-
-      -- Employee Transfer History Table
-      CREATE TABLE IF NOT EXISTS employee_transfer_history (
+      // Employee Transfer History Table
+      `CREATE TABLE IF NOT EXISTS employee_transfer_history (
         id TEXT PRIMARY KEY,
         employee_id TEXT NOT NULL,
         from_branch_id TEXT NOT NULL,
@@ -212,13 +205,12 @@ export class DatabaseManager {
         FOREIGN KEY (employee_id) REFERENCES employees(id),
         FOREIGN KEY (from_branch_id) REFERENCES branches(id),
         FOREIGN KEY (to_branch_id) REFERENCES branches(id)
-      );
+      )`,
+      `CREATE INDEX IF NOT EXISTS idx_transfer_history_employee ON employee_transfer_history(employee_id)`,
+      `CREATE INDEX IF NOT EXISTS idx_transfer_history_date ON employee_transfer_history(effective_date)`,
 
-      CREATE INDEX IF NOT EXISTS idx_transfer_history_employee ON employee_transfer_history(employee_id);
-      CREATE INDEX IF NOT EXISTS idx_transfer_history_date ON employee_transfer_history(effective_date);
-
-      -- Audit Log Table
-      CREATE TABLE IF NOT EXISTS audit_logs (
+      // Audit Log Table
+      `CREATE TABLE IF NOT EXISTS audit_logs (
         id TEXT PRIMARY KEY,
         entity_type TEXT NOT NULL,
         entity_id TEXT NOT NULL,
@@ -226,14 +218,16 @@ export class DatabaseManager {
         performed_by TEXT NOT NULL,
         changes TEXT,
         timestamp TEXT DEFAULT CURRENT_TIMESTAMP
-      );
+      )`,
+      `CREATE INDEX IF NOT EXISTS idx_audit_entity ON audit_logs(entity_type, entity_id)`,
+      `CREATE INDEX IF NOT EXISTS idx_audit_performer ON audit_logs(performed_by)`,
+      `CREATE INDEX IF NOT EXISTS idx_audit_timestamp ON audit_logs(timestamp)`
+    ];
 
-      CREATE INDEX IF NOT EXISTS idx_audit_entity ON audit_logs(entity_type, entity_id);
-      CREATE INDEX IF NOT EXISTS idx_audit_performer ON audit_logs(performed_by);
-      CREATE INDEX IF NOT EXISTS idx_audit_timestamp ON audit_logs(timestamp);
-    `;
-
-    await this.run(schema);
+    // Execute each statement separately
+    for (const statement of statements) {
+      await this.run(statement);
+    }
   }
 
   /**
