@@ -1,43 +1,157 @@
-# Getting Started with Core Banking App
+# 🚀 Getting Started with Core Banking - Microservices Platform
 
-## Quick Start
+This guide will help you get started with the Core Banking microservices platform.
 
-### 1. Installation
+## Prerequisites
+
+- **Node.js** 20+ ([Download](https://nodejs.org/))
+- **MongoDB** 7+ ([Download](https://www.mongodb.com/try/download/community))
+- **Docker** (optional, for containerized deployment)
+
+## Option 1: Docker Compose (Recommended) 🐳
+
+Start all services with a single command:
+
+```bash
+docker-compose up -d
+```
+
+Access the applications:
+- **API Gateway**: http://localhost:8080
+- **Client App**: http://localhost:65124
+- **Admin App**: http://localhost:4201
+
+## Option 2: Manual Setup 🛠️
+
+### 1. Start MongoDB
+
+```bash
+# Linux/Mac
+sudo systemctl start mongod
+
+# Windows - MongoDB installed as service
+net start MongoDB
+
+# Or use Docker
+docker run -d -p 27017:27017 --name mongodb mongo:7
+```
+
+### 2. Seed the Database
+
+```bash
+cd backend/services/scripts
+npm install
+npm run seed
+```
+
+This creates test accounts:
+- **Admin**: admin@banking.com / admin123
+- **Client**: client@banking.com / client123
+
+### 3. Start Microservices
+
+**Linux/Mac:**
+```bash
+./start-services.sh
+```
+
+**Windows:**
+```bash
+start-services.bat
+```
+
+Or start services individually:
+```bash
+# Auth Service
+cd backend/services/auth
+npm install
+cp .env.example .env
+npm run dev
+
+# Repeat for: accounts, transactions, clients, admin, notifications, api-gateway
+```
+
+### 4. Start Frontend Applications
+
+**Client App:**
 ```bash
 npm install --legacy-peer-deps
-```
-
-### 2. Start Development Server
-```bash
 npm start
+# Access at http://localhost:65124
 ```
 
-The application will be accessible at `http://localhost:4200`
-
-### 3. Start Backend API (if available)
+**Admin App:**
 ```bash
-# Make sure your backend is running on http://localhost:8080
-# The app will show demo data if the API is unavailable
+cd admin
+npm install --legacy-peer-deps
+npm start
+# Access at http://localhost:4201
 ```
 
-## Available Scripts
+## 🏗️ Microservices Architecture
 
-### Development
-```bash
-npm start              # Start dev server
-npm run watch        # Watch for changes
+```
+Client/Admin Apps → API Gateway (8080) → Microservices (3001-3006) → MongoDB
 ```
 
-### Production
+### Services Overview:
+1. **Auth Service** (3001) - User authentication & JWT tokens
+2. **Accounts Service** (3002) - Account management & balances
+3. **Transactions Service** (3003) - Money transfers & history
+4. **Clients Service** (3004) - Client profiles & KYC
+5. **Admin Service** (3005) - Admin operations aggregator
+6. **Notifications Service** (3006) - Real-time notifications
+7. **API Gateway** (8080) - Single entry point for all requests
+
+For detailed architecture documentation, see [backend/services/README.md](backend/services/README.md)
+
+## 🔍 Verify Installation
+
+Check if all services are healthy:
+
 ```bash
-npm run build        # Build for production
-ng serve --prod     # Serve production build
+curl http://localhost:8080/api/health
 ```
 
-### Testing
+Expected response:
+```json
+{
+  "status": "healthy",
+  "services": {
+    "auth": "healthy",
+    "accounts": "healthy",
+    "transactions": "healthy",
+    "clients": "healthy",
+    "admin": "healthy",
+    "notifications": "healthy"
+  }
+}
+```
+
+## 🔐 Default Test Credentials
+
+**Admin User:**
+- Email: `admin@banking.com`
+- Password: `admin123`
+
+**Client User:**
+- Email: `client@banking.com`
+- Password: `client123`
+- Account Balance: 15,420.50 TND
+
+## 🛑 Stopping Services
+
+**Linux/Mac:**
 ```bash
-ng test             # Run unit tests
-ng e2e             # Run e2e tests
+./stop-services.sh
+```
+
+**Windows:**
+- Close the command prompt windows running the services
+
+**Docker:**
+```bash
+docker-compose down
 ```
 
 ## Project Features
@@ -101,16 +215,24 @@ The application includes demo data that displays automatically when the API is u
 - Safari (latest)
 - Edge (latest)
 
-## Troubleshooting
+## ⚠️ Troubleshooting
 
-### "Cannot find module" error
+### "Cannot connect to MongoDB"
+- Ensure MongoDB is running: `sudo systemctl status mongod`
+- Or start with Docker: `docker run -d -p 27017:27017 mongo:7`
+
+### "Port already in use"
+- Check what's using the port: `lsof -i :8080` (Linux/Mac) or `netstat -ano | findstr :8080` (Windows)
+- Stop the conflicting process or change the port in service's `.env` file
+
+### "Services not starting"
+- Check logs in `./logs/` directory
+- Ensure all dependencies are installed: `npm install` in each service
+- Verify MongoDB is accessible
+
+### "Module not found" errors
 ```bash
 npm install --legacy-peer-deps
-```
-
-### Port 4200 already in use
-```bash
-ng serve --port 4300
 ```
 
 ### Build errors
@@ -120,20 +242,38 @@ rm -rf node_modules package-lock.json
 npm install --legacy-peer-deps
 ```
 
-## Next Steps
+## 💡 Development Tips
 
-1. **Update API endpoint** in `AccountService`
-2. **Customize colors** in `tailwind.config.js`
-3. **Add your backend endpoints**
-4. **Deploy to production**
+- View Docker logs: `docker-compose logs -f`
+- View service logs: `tail -f logs/[service-name].log`
+- Rebuild services: `docker-compose up --build`
+- Reset database: Re-run `npm run seed` in scripts folder
+- API documentation: Each service has a README with endpoint details
 
-## Resources
+## 🎯 Next Steps
 
-- [Angular Documentation](https://angular.io)
-- [Tailwind CSS Docs](https://tailwindcss.com)
-- [Lucide Icons](https://lucide.dev)
-- [Chart.js Guide](https://www.chartjs.org)
+1. Login to the client app at http://localhost:65124
+2. Use credentials: client@banking.com / client123
+3. View your account balance and transactions
+4. Try making a transfer
+5. Login to admin app at http://localhost:4201
+6. Use admin credentials: admin@banking.com / admin123
+7. View and manage all accounts, clients, and transactions
+
+## 📚 Additional Documentation
+
+- [Complete Microservices Documentation](backend/services/README.md)
+- [Architecture Overview](ARCHITECTURE.md)
+- [API Integration Guide](API_INTEGRATION.md)
+- [Project Summary](PROJECT_SUMMARY.md)
+
+## 📞 Need Help?
+
+- Check the [main README](README.md)
+- Review [backend services documentation](backend/services/README.md)
+- Each microservice has its own README with detailed API docs
+- Create an issue on GitHub
 
 ---
 
-Happy coding! 🚀
+**Happy Banking! 🏦**
