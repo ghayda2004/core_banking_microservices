@@ -112,6 +112,7 @@ router.post('/verify', async (req: Request, res: Response) => {
     res.json({
       success: true,
       user: {
+        userId: user._id.toString(),
         id: user._id,
         email: user.email,
         name: user.name,
